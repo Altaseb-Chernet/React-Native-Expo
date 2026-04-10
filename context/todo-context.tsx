@@ -56,7 +56,9 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
 
     setTasks((prev) =>
       prev.map((task) =>
-        task.id === id ? { ...task, text: cleanText, updatedAt: new Date().toISOString() } : task,
+        task.id === id
+          ? { ...task, text: cleanText, updatedAt: new Date().toISOString() }
+          : task,
       ),
     );
   };
