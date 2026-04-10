@@ -48,7 +48,9 @@ export default function TabLayout() {
         name="trash"
         options={{
           title: "Trash",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="trash.fill" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="trash.fill" color={color} />
+          ),
         }}
       />
     </Tabs>
