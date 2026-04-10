@@ -1,17 +1,17 @@
 import React from "react";
 import {
-  Alert,
-  FlatList,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    FlatList,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTodos } from "@/context/todo-context";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function TrashScreen() {
   const colorScheme = useColorScheme();
@@ -21,23 +21,42 @@ export default function TrashScreen() {
   const confirmDeleteForever = (id: string) => {
     Alert.alert("Delete forever", "This task will be removed permanently.", [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteTaskForever(id) },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => deleteTaskForever(id),
+      },
     ]);
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.icon }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.background,
+            borderBottomColor: colors.icon,
+          },
+        ]}
+      >
         <Text style={[styles.title, { color: colors.text }]}>Trash</Text>
-        <Text style={[styles.subtitle, { color: colors.icon }]}> 
-          {trashedTasks.length} {trashedTasks.length === 1 ? "task" : "tasks"} in trash
+        <Text style={[styles.subtitle, { color: colors.icon }]}>
+          {trashedTasks.length} {trashedTasks.length === 1 ? "task" : "tasks"}{" "}
+          in trash
         </Text>
       </View>
 
       {trashedTasks.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { color: colors.text }]}>Trash is empty</Text>
-          <Text style={[styles.emptySubtext, { color: colors.icon }]}>Deleted tasks will appear here before permanent removal.</Text>
+          <Text style={[styles.emptyText, { color: colors.text }]}>
+            Trash is empty
+          </Text>
+          <Text style={[styles.emptySubtext, { color: colors.icon }]}>
+            Deleted tasks will appear here before permanent removal.
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -46,17 +65,44 @@ export default function TrashScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
-            <View style={[styles.trashItem, { backgroundColor: colors.background, borderColor: colors.icon }]}>
+            <View
+              style={[
+                styles.trashItem,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.icon,
+                },
+              ]}
+            >
               <View style={styles.taskCopy}>
-                <Text style={[styles.taskText, { color: colors.text }]}>{item.text}</Text>
-                <Text style={[styles.metaText, { color: colors.icon }]}>Created {formatDate(item.createdAt)}</Text>
-                <Text style={[styles.metaText, { color: colors.icon }]}>Deleted {item.deletedAt ? formatDate(item.deletedAt) : "Recently"}</Text>
+                <Text style={[styles.taskText, { color: colors.text }]}>
+                  {item.text}
+                </Text>
+                <Text style={[styles.metaText, { color: colors.icon }]}>
+                  Created {formatDate(item.createdAt)}
+                </Text>
+                <Text style={[styles.metaText, { color: colors.icon }]}>
+                  Deleted{" "}
+                  {item.deletedAt ? formatDate(item.deletedAt) : "Recently"}
+                </Text>
               </View>
               <View style={styles.actions}>
-                <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.tint }]} onPress={() => restoreTask(item.id)}>
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    { backgroundColor: colors.tint },
+                  ]}
+                  onPress={() => restoreTask(item.id)}
+                >
                   <Text style={styles.actionText}>Restore</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.deleteButton, { backgroundColor: colors.icon }]} onPress={() => confirmDeleteForever(item.id)}>
+                <TouchableOpacity
+                  style={[
+                    styles.deleteButton,
+                    { backgroundColor: colors.icon },
+                  ]}
+                  onPress={() => confirmDeleteForever(item.id)}
+                >
                   <Text style={styles.deleteText}>Delete</Text>
                 </TouchableOpacity>
               </View>
