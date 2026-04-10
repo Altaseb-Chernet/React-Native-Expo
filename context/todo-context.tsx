@@ -1,16 +1,27 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
 
+export type TodoStatus = "active" | "completed" | "trashed";
+
 export type Todo = {
   id: string;
   text: string;
-  completed: boolean;
+  status: TodoStatus;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
 };
 
 type TodoContextValue = {
   tasks: Todo[];
+  activeTasks: Todo[];
+  completedTasks: Todo[];
+  trashedTasks: Todo[];
   addTask: (text: string) => void;
-  deleteTask: (id: string) => void;
+  updateTask: (id: string, text: string) => void;
   toggleTask: (id: string) => void;
+  moveTaskToTrash: (id: string) => void;
+  restoreTask: (id: string) => void;
+  deleteTaskForever: (id: string) => void;
 };
 
 const TodoContext = createContext<TodoContextValue | undefined>(undefined);
@@ -28,32 +39,105 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     const newTask: Todo = {
       id: Date.now().toString(),
       text: cleanText,
-      completed: false,
+      status: "active",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     setTasks((prev) => [newTask, ...prev]);
   };
 
-  const deleteTask = (id: string) => {
-    setTasks((prev) => prev.filter((task) => task.id !== id));
+  const updateTask = (id: string, text: string) => {
+    const cleanText = text.trim();
+
+    if (!cleanText) {
+      return;
+    }
+
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id ? { ...task, text: cleanText, updatedAt: new Date().toISOString() } : task,
+      ),
+    );
   };
 
   const toggleTask = (id: string) => {
     setTasks((prev) =>
       prev.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task,
+        task.id === id
+          ? {
+              ...task,
+              status: task.status === "completed" ? "active" : "completed",
+              updatedAt: new Date().toISOString(),
+            }
+          : task,
       ),
     );
   };
 
+  const moveTaskToTrash = (id: string) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id
+          ? {
+              ...task,
+              status: "trashed",
+              deletedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }
+          : task,
+      ),
+    );
+  };
+
+  const restoreTask = (id: string) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id
+          ? {
+              ...task,
+              status: "active",
+              deletedAt: null,
+              updatedAt: new Date().toISOString(),
+            }
+          : task,
+      ),
+    );
+  };
+
+  const deleteTaskForever = (id: string) => {
+    setTasks((prev) => prev.filter((task) => task.id !== id));
+  };
+
+  const activeTasks = useMemo(
+    () => tasks.filter((task) => task.status === "active"),
+    [tasks],
+  );
+
+  const completedTasks = useMemo(
+    () => tasks.filter((task) => task.status === "completed"),
+    [tasks],
+  );
+
+  const trashedTasks = useMemo(
+    () => tasks.filter((task) => task.status === "trashed"),
+    [tasks],
+  );
+
   const value = useMemo(
     () => ({
       tasks,
+      activeTasks,
+      completedTasks,
+      trashedTasks,
       addTask,
-      deleteTask,
+      updateTask,
       toggleTask,
+      moveTaskToTrash,
+      restoreTask,
+      deleteTaskForever,
     }),
-    [tasks],
+    [tasks, activeTasks, completedTasks, trashedTasks],
   );
 
   return <TodoContext.Provider value={value}>{children}</TodoContext.Provider>;
