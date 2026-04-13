@@ -13,6 +13,14 @@ import { Colors } from "@/constants/theme";
 import { useTodos } from "@/context/todo-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
+const STATUS_LABELS: Record<string, string> = {
+  todo: "Todo",
+  in_progress: "In progress",
+  done: "Done",
+  submitted: "Submitted",
+  trashed: "Trash",
+};
+
 export default function TrashScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
@@ -79,8 +87,24 @@ export default function TrashScreen() {
                   {item.text}
                 </Text>
                 <Text style={[styles.metaText, { color: colors.icon }]}>
+                  Status {STATUS_LABELS[item.previousStatus ?? item.status]}
+                </Text>
+                <Text style={[styles.metaText, { color: colors.icon }]}>
+                  Priority {item.priority}
+                </Text>
+                <Text style={[styles.metaText, { color: colors.icon }]}>
                   Created {formatDate(item.createdAt)}
                 </Text>
+                {item.dueDate ? (
+                  <Text style={[styles.metaText, { color: colors.icon }]}>
+                    Due {formatDateOnly(item.dueDate)}
+                  </Text>
+                ) : null}
+                {item.reminderAt ? (
+                  <Text style={[styles.metaText, { color: colors.icon }]}>
+                    Alarm {formatDateTime(item.reminderAt)}
+                  </Text>
+                ) : null}
                 <Text style={[styles.metaText, { color: colors.icon }]}>
                   Deleted{" "}
                   {item.deletedAt ? formatDate(item.deletedAt) : "Recently"}
@@ -119,6 +143,23 @@ function formatDate(value: string) {
     month: "short",
     day: "numeric",
     year: "numeric",
+  });
+}
+
+function formatDateOnly(value: string) {
+  return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   });
 }
 
