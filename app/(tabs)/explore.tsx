@@ -1,18 +1,18 @@
 import React, { useMemo, useState } from "react";
 import {
-  FlatList,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    FlatList,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { Colors } from "@/constants/theme";
 import {
-  TASK_STATUS_ORDER,
-  type TodoStatus,
-  useTodos,
+    TASK_STATUS_ORDER,
+    type TodoStatus,
+    useTodos,
 } from "@/context/todo-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -28,7 +28,9 @@ export default function CalendarScreen() {
   const colors = Colors[colorScheme ?? "light"];
   const { tasks, setTaskStatus, toggleTask, moveTaskToTrash } = useTodos();
   const [monthCursor, setMonthCursor] = useState(() => new Date());
-  const [selectedDate, setSelectedDate] = useState(() => toDateOnlyString(new Date()));
+  const [selectedDate, setSelectedDate] = useState(() =>
+    toDateOnlyString(new Date()),
+  );
 
   const monthDays = useMemo(() => {
     const year = monthCursor.getFullYear();
@@ -73,7 +75,9 @@ export default function CalendarScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Calendar</Text>
         <Text style={[styles.subtitle, { color: colors.icon }]}>
@@ -90,38 +94,56 @@ export default function CalendarScreen() {
               { borderColor: colors.icon, backgroundColor: colors.background },
             ]}
           >
-            <Text style={[styles.summaryValue, { color: colors.text }]}>{totals[status]}</Text>
-            <Text style={[styles.summaryLabel, { color: colors.icon }]}>{STATUS_LABELS[status]}</Text>
+            <Text style={[styles.summaryValue, { color: colors.text }]}>
+              {totals[status]}
+            </Text>
+            <Text style={[styles.summaryLabel, { color: colors.icon }]}>
+              {STATUS_LABELS[status]}
+            </Text>
           </View>
         ))}
       </View>
 
-      <View style={[styles.monthCard, { backgroundColor: colors.background, borderColor: colors.icon }]}>
+      <View
+        style={[
+          styles.monthCard,
+          { backgroundColor: colors.background, borderColor: colors.icon },
+        ]}
+      >
         <View style={styles.monthHeader}>
           <TouchableOpacity
             style={[styles.monthButton, { borderColor: colors.icon }]}
             onPress={() =>
               setMonthCursor(
-                (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1),
+                (current) =>
+                  new Date(current.getFullYear(), current.getMonth() - 1, 1),
               )
             }
           >
-            <Text style={[styles.monthButtonText, { color: colors.text }]}>Prev</Text>
+            <Text style={[styles.monthButtonText, { color: colors.text }]}>
+              Prev
+            </Text>
           </TouchableOpacity>
 
           <Text style={[styles.monthTitle, { color: colors.text }]}>
-            {monthCursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+            {monthCursor.toLocaleDateString(undefined, {
+              month: "long",
+              year: "numeric",
+            })}
           </Text>
 
           <TouchableOpacity
             style={[styles.monthButton, { borderColor: colors.icon }]}
             onPress={() =>
               setMonthCursor(
-                (current) => new Date(current.getFullYear(), current.getMonth() + 1, 1),
+                (current) =>
+                  new Date(current.getFullYear(), current.getMonth() + 1, 1),
               )
             }
           >
-            <Text style={[styles.monthButtonText, { color: colors.text }]}>Next</Text>
+            <Text style={[styles.monthButtonText, { color: colors.text }]}>
+              Next
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -150,18 +172,30 @@ export default function CalendarScreen() {
                 style={[
                   styles.dayCell,
                   { borderColor: colors.icon },
-                  isSelected && { backgroundColor: colors.tint, borderColor: colors.tint },
+                  isSelected && {
+                    backgroundColor: colors.tint,
+                    borderColor: colors.tint,
+                  },
                 ]}
                 onPress={() => setSelectedDate(day.value as string)}
               >
-                <Text style={[styles.dayNumber, { color: isSelected ? "#fff" : colors.text }]}>
+                <Text
+                  style={[
+                    styles.dayNumber,
+                    { color: isSelected ? "#fff" : colors.text },
+                  ]}
+                >
                   {day.label}
                 </Text>
                 {tasksCount > 0 ? (
                   <View
                     style={[
                       styles.dayBadge,
-                      { backgroundColor: isSelected ? "rgba(255,255,255,0.28)" : colors.tint },
+                      {
+                        backgroundColor: isSelected
+                          ? "rgba(255,255,255,0.28)"
+                          : colors.tint,
+                      },
                     ]}
                   >
                     <Text style={styles.dayBadgeText}>{tasksCount}</Text>
@@ -173,18 +207,24 @@ export default function CalendarScreen() {
         </View>
 
         <View style={styles.selectedDateRow}>
-          <Text style={[styles.selectedDateLabel, { color: colors.text }]}> 
+          <Text style={[styles.selectedDateLabel, { color: colors.text }]}>
             {formatDayTitle(selectedDate)}
           </Text>
-          <TouchableOpacity onPress={() => setSelectedDate(toDateOnlyString(new Date()))}>
-            <Text style={[styles.selectedDateAction, { color: colors.tint }]}>Today</Text>
+          <TouchableOpacity
+            onPress={() => setSelectedDate(toDateOnlyString(new Date()))}
+          >
+            <Text style={[styles.selectedDateAction, { color: colors.tint }]}>
+              Today
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {tasksForSelectedDate.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { color: colors.text }]}>No tasks on this day</Text>
+          <Text style={[styles.emptyText, { color: colors.text }]}>
+            No tasks on this day
+          </Text>
           <Text style={[styles.emptySubtext, { color: colors.icon }]}>
             Pick a date with a due task or create one from the Todos tab.
           </Text>
@@ -199,34 +239,58 @@ export default function CalendarScreen() {
             <View
               style={[
                 styles.taskCard,
-                { backgroundColor: colors.background, borderColor: colors.icon },
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.icon,
+                },
               ]}
             >
               <View style={styles.taskCopy}>
-                <Text style={[styles.taskText, { color: colors.text }]}>{item.text}</Text>
-                <Text style={[styles.metaText, { color: colors.icon }]}>
-                  {STATUS_LABELS[item.status as Exclude<TodoStatus, "trashed">]} · {item.priority}
+                <Text style={[styles.taskText, { color: colors.text }]}>
+                  {item.text}
                 </Text>
-                <Text style={[styles.metaText, { color: colors.icon }]}>Created {formatDate(item.createdAt)}</Text>
+                <Text style={[styles.metaText, { color: colors.icon }]}>
+                  {STATUS_LABELS[item.status as Exclude<TodoStatus, "trashed">]}{" "}
+                  · {item.priority}
+                </Text>
+                <Text style={[styles.metaText, { color: colors.icon }]}>
+                  Created {formatDate(item.createdAt)}
+                </Text>
                 {item.reminderAt ? (
-                  <Text style={[styles.metaText, { color: colors.icon }]}>Alarm {formatDateTime(item.reminderAt)}</Text>
+                  <Text style={[styles.metaText, { color: colors.icon }]}>
+                    Alarm {formatDateTime(item.reminderAt)}
+                  </Text>
                 ) : null}
               </View>
               <View style={styles.actions}>
                 <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: colors.tint }]}
+                  style={[
+                    styles.actionButton,
+                    { backgroundColor: colors.tint },
+                  ]}
                   onPress={() => toggleTask(item.id)}
                 >
                   <Text style={styles.actionText}>Next</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: colors.tint }]}
-                  onPress={() => setTaskStatus(item.id, item.status === "done" ? "todo" : "done")}
+                  style={[
+                    styles.actionButton,
+                    { backgroundColor: colors.tint },
+                  ]}
+                  onPress={() =>
+                    setTaskStatus(
+                      item.id,
+                      item.status === "done" ? "todo" : "done",
+                    )
+                  }
                 >
                   <Text style={styles.actionText}>Done</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.deleteButton, { backgroundColor: colors.icon }]}
+                  style={[
+                    styles.deleteButton,
+                    { backgroundColor: colors.icon },
+                  ]}
                   onPress={() => moveTaskToTrash(item.id)}
                 >
                   <Text style={styles.deleteText}>Trash</Text>
