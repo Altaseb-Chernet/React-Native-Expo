@@ -1,24 +1,23 @@
 import React, { useMemo, useState } from "react";
 import {
-    FlatList,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { Colors } from "@/constants/theme";
-import {
-    TASK_STATUS_ORDER,
-    type TodoStatus,
-    useTodos,
-} from "@/context/todo-context";
+import { type Todo, type TodoStatus, useTodos } from "@/context/todo-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+
+type ViewMode = "month" | "agenda";
+type ColorPalette = (typeof Colors)["light"];
 
 const STATUS_LABELS: Record<Exclude<TodoStatus, "trashed">, string> = {
   todo: "Todo",
-  in_progress: "In progress",
+  in_progress: "Doing",
   done: "Done",
   submitted: "Submitted",
 };
@@ -26,10 +25,15 @@ const STATUS_LABELS: Record<Exclude<TodoStatus, "trashed">, string> = {
 export default function CalendarScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
-  const { tasks, setTaskStatus, toggleTask, moveTaskToTrash } = useTodos();
+  const { tasks, updateTask, moveTaskToTrash } = useTodos();
+
+  const [mode, setMode] = useState<ViewMode>("month");
   const [monthCursor, setMonthCursor] = useState(() => new Date());
-  const [selectedDate, setSelectedDate] = useState(() =>
-    toDateOnlyString(new Date()),
+  const [selectedDate, setSelectedDate] = useState(() => toDateOnlyString(new Date()));
+
+  const visibleTasks = useMemo(
+    () => tasks.filter((task) => task.status !== "trashed"),
+    [tasks],
   );
 
   const monthDays = useMemo(() => {
@@ -56,73 +60,99 @@ export default function CalendarScreen() {
     return cells;
   }, [monthCursor]);
 
-  const tasksForSelectedDate = useMemo(
+  const selectedDateTasks = useMemo(
     () =>
-      tasks.filter(
-        (task) => task.status !== "trashed" && task.dueDate === selectedDate,
+      visibleTasks.filter(
+        (task) => task.dueDate === selectedDate,
       ),
-    [selectedDate, tasks],
+    [selectedDate, visibleTasks],
   );
+
+  const agendaTasks = useMemo(
+    () =>
+      [...visibleTasks]
+        .filter((task) => task.dueDate)
+        .sort((left, right) => {
+          if (!left.dueDate || !right.dueDate) {
+            return 0;
+          }
+
+          return left.dueDate.localeCompare(right.dueDate);
+        }),
+    [visibleTasks],
+  );
+
+  const monthCounts = useMemo(() => {
+    return monthDays.reduce<Record<string, number>>((counts, day) => {
+      if (!day.value) {
+        return counts;
+      }
+
+      counts[day.value] = visibleTasks.filter((task) => task.dueDate === day.value).length;
+      return counts;
+    }, {});
+  }, [monthDays, visibleTasks]);
 
   const totals = useMemo(
     () => ({
-      todo: tasks.filter((task) => task.status === "todo").length,
-      in_progress: tasks.filter((task) => task.status === "in_progress").length,
-      done: tasks.filter((task) => task.status === "done").length,
-      submitted: tasks.filter((task) => task.status === "submitted").length,
+      todo: visibleTasks.filter((task) => task.status === "todo").length,
+      in_progress: visibleTasks.filter((task) => task.status === "in_progress").length,
+      done: visibleTasks.filter((task) => task.status === "done").length,
+      submitted: visibleTasks.filter((task) => task.status === "submitted").length,
     }),
-    [tasks],
+    [visibleTasks],
   );
+
+  const cycleStatus = (task: Todo) => {
+    const order: Array<Exclude<TodoStatus, "trashed">> = [
+      "todo",
+      "in_progress",
+      "done",
+      "submitted",
+    ];
+
+    const currentIndex = order.indexOf(task.status === "trashed" ? "todo" : task.status);
+    const nextStatus = order[(currentIndex + 1) % order.length];
+
+    updateTask(task.id, { status: nextStatus });
+  };
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Calendar</Text>
-        <Text style={[styles.subtitle, { color: colors.icon }]}>
-          Plan dates, track progress, and trigger reminders
-        </Text>
+        <View>
+          <Text style={[styles.title, { color: colors.text }]}>Calendar</Text>
+          <Text style={[styles.subtitle, { color: colors.icon }]}>
+            Month and agenda views in one place
+          </Text>
+        </View>
+
+        <View style={styles.modeTabs}>
+          <ModeTab label="Month" active={mode === "month"} onPress={() => setMode("month")} color={colors} />
+          <ModeTab label="Agenda" active={mode === "agenda"} onPress={() => setMode("agenda")} color={colors} />
+        </View>
       </View>
 
       <View style={styles.summaryRow}>
-        {TASK_STATUS_ORDER.map((status) => (
-          <View
-            key={status}
-            style={[
-              styles.summaryCard,
-              { borderColor: colors.icon, backgroundColor: colors.background },
-            ]}
-          >
-            <Text style={[styles.summaryValue, { color: colors.text }]}>
-              {totals[status]}
-            </Text>
-            <Text style={[styles.summaryLabel, { color: colors.icon }]}>
-              {STATUS_LABELS[status]}
-            </Text>
-          </View>
-        ))}
+        <SummaryCard label="Todo" value={totals.todo} color={colors} />
+        <SummaryCard label="Doing" value={totals.in_progress} color={colors} />
+        <SummaryCard label="Done" value={totals.done} color={colors} />
+        <SummaryCard label="Sent" value={totals.submitted} color={colors} />
       </View>
 
-      <View
-        style={[
-          styles.monthCard,
-          { backgroundColor: colors.background, borderColor: colors.icon },
-        ]}
-      >
+      <View style={[styles.monthCard, { backgroundColor: colors.background, borderColor: colors.icon }]}> 
         <View style={styles.monthHeader}>
           <TouchableOpacity
             style={[styles.monthButton, { borderColor: colors.icon }]}
             onPress={() =>
               setMonthCursor(
-                (current) =>
-                  new Date(current.getFullYear(), current.getMonth() - 1, 1),
+                (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1),
               )
             }
           >
-            <Text style={[styles.monthButtonText, { color: colors.text }]}>
-              Prev
-            </Text>
+            <Text style={[styles.monthButtonText, { color: colors.text }]}>Prev</Text>
           </TouchableOpacity>
 
           <Text style={[styles.monthTitle, { color: colors.text }]}>
@@ -136,14 +166,11 @@ export default function CalendarScreen() {
             style={[styles.monthButton, { borderColor: colors.icon }]}
             onPress={() =>
               setMonthCursor(
-                (current) =>
-                  new Date(current.getFullYear(), current.getMonth() + 1, 1),
+                (current) => new Date(current.getFullYear(), current.getMonth() + 1, 1),
               )
             }
           >
-            <Text style={[styles.monthButtonText, { color: colors.text }]}>
-              Next
-            </Text>
+            <Text style={[styles.monthButtonText, { color: colors.text }]}>Next</Text>
           </TouchableOpacity>
         </View>
 
@@ -162,9 +189,7 @@ export default function CalendarScreen() {
             }
 
             const isSelected = selectedDate === day.value;
-            const tasksCount = tasks.filter(
-              (task) => task.dueDate === day.value && task.status !== "trashed",
-            ).length;
+            const count = monthCounts[day.value] ?? 0;
 
             return (
               <TouchableOpacity
@@ -172,33 +197,16 @@ export default function CalendarScreen() {
                 style={[
                   styles.dayCell,
                   { borderColor: colors.icon },
-                  isSelected && {
-                    backgroundColor: colors.tint,
-                    borderColor: colors.tint,
-                  },
+                  isSelected && { backgroundColor: colors.tint, borderColor: colors.tint },
                 ]}
                 onPress={() => setSelectedDate(day.value as string)}
               >
-                <Text
-                  style={[
-                    styles.dayNumber,
-                    { color: isSelected ? "#fff" : colors.text },
-                  ]}
-                >
+                <Text style={[styles.dayNumber, { color: isSelected ? "#fff" : colors.text }]}>
                   {day.label}
                 </Text>
-                {tasksCount > 0 ? (
-                  <View
-                    style={[
-                      styles.dayBadge,
-                      {
-                        backgroundColor: isSelected
-                          ? "rgba(255,255,255,0.28)"
-                          : colors.tint,
-                      },
-                    ]}
-                  >
-                    <Text style={styles.dayBadgeText}>{tasksCount}</Text>
+                {count > 0 ? (
+                  <View style={[styles.dayBadge, { backgroundColor: isSelected ? "rgba(255,255,255,0.28)" : colors.tint }]}> 
+                    <Text style={styles.dayBadgeText}>{count}</Text>
                   </View>
                 ) : null}
               </TouchableOpacity>
@@ -206,101 +214,154 @@ export default function CalendarScreen() {
           })}
         </View>
 
-        <View style={styles.selectedDateRow}>
-          <Text style={[styles.selectedDateLabel, { color: colors.text }]}>
+        <View style={styles.dateRow}>
+          <Text style={[styles.dateTitle, { color: colors.text }]}>
             {formatDayTitle(selectedDate)}
           </Text>
-          <TouchableOpacity
-            onPress={() => setSelectedDate(toDateOnlyString(new Date()))}
-          >
-            <Text style={[styles.selectedDateAction, { color: colors.tint }]}>
-              Today
-            </Text>
+          <TouchableOpacity onPress={() => setSelectedDate(toDateOnlyString(new Date()))}>
+            <Text style={[styles.todayLink, { color: colors.tint }]}>Today</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {tasksForSelectedDate.length === 0 ? (
+      {mode === "month" ? (
+        selectedDateTasks.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, { color: colors.text }]}>No tasks on this day</Text>
+            <Text style={[styles.emptySubtext, { color: colors.icon }]}>Pick another date or add a new task from the Tasks tab.</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={selectedDateTasks}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => <CalendarTaskCard item={item} color={colors} onCycle={cycleStatus} onTrash={moveTaskToTrash} />}
+          />
+        )
+      ) : agendaTasks.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { color: colors.text }]}>
-            No tasks on this day
-          </Text>
-          <Text style={[styles.emptySubtext, { color: colors.icon }]}>
-            Pick a date with a due task or create one from the Todos tab.
-          </Text>
+          <Text style={[styles.emptyText, { color: colors.text }]}>No agenda items</Text>
+          <Text style={[styles.emptySubtext, { color: colors.icon }]}>Add due dates to tasks and they will appear here.</Text>
         </View>
       ) : (
         <FlatList
-          data={tasksForSelectedDate}
+          data={agendaTasks}
           keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <View
-              style={[
-                styles.taskCard,
-                {
-                  backgroundColor: colors.background,
-                  borderColor: colors.icon,
-                },
-              ]}
-            >
-              <View style={styles.taskCopy}>
-                <Text style={[styles.taskText, { color: colors.text }]}>
-                  {item.text}
-                </Text>
-                <Text style={[styles.metaText, { color: colors.icon }]}>
-                  {STATUS_LABELS[item.status as Exclude<TodoStatus, "trashed">]}{" "}
-                  · {item.priority}
-                </Text>
-                <Text style={[styles.metaText, { color: colors.icon }]}>
-                  Created {formatDate(item.createdAt)}
-                </Text>
-                {item.reminderAt ? (
-                  <Text style={[styles.metaText, { color: colors.icon }]}>
-                    Alarm {formatDateTime(item.reminderAt)}
-                  </Text>
-                ) : null}
-              </View>
-              <View style={styles.actions}>
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    { backgroundColor: colors.tint },
-                  ]}
-                  onPress={() => toggleTask(item.id)}
-                >
-                  <Text style={styles.actionText}>Next</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    { backgroundColor: colors.tint },
-                  ]}
-                  onPress={() =>
-                    setTaskStatus(
-                      item.id,
-                      item.status === "done" ? "todo" : "done",
-                    )
-                  }
-                >
-                  <Text style={styles.actionText}>Done</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.deleteButton,
-                    { backgroundColor: colors.icon },
-                  ]}
-                  onPress={() => moveTaskToTrash(item.id)}
-                >
-                  <Text style={styles.deleteText}>Trash</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => <AgendaTaskCard item={item} color={colors} onCycle={cycleStatus} onTrash={moveTaskToTrash} />}
         />
       )}
     </SafeAreaView>
+  );
+}
+
+function SummaryCard({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: ColorPalette;
+}) {
+  return (
+    <View style={[styles.summaryCard, { borderColor: color.icon, backgroundColor: color.background }]}> 
+      <Text style={[styles.summaryValue, { color: color.text }]}>{value}</Text>
+      <Text style={[styles.summaryLabel, { color: color.icon }]}>{label}</Text>
+    </View>
+  );
+}
+
+function ModeTab({
+  label,
+  active,
+  onPress,
+  color,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+  color: ColorPalette;
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.modeTab,
+        { borderColor: color.icon },
+        active && { backgroundColor: color.tint, borderColor: color.tint },
+      ]}
+      onPress={onPress}
+    >
+      <Text style={[styles.modeTabText, { color: active ? "#fff" : color.text }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function CalendarTaskCard({
+  item,
+  color,
+  onCycle,
+  onTrash,
+}: {
+  item: Todo;
+  color: ColorPalette;
+  onCycle: (task: Todo) => void;
+  onTrash: (id: string) => void;
+}) {
+  return (
+    <View style={[styles.taskCard, { borderColor: color.icon, backgroundColor: color.background }]}> 
+      <View style={styles.taskTopRow}>
+        <View style={styles.taskBody}>
+          <Text style={[styles.taskText, { color: color.text }]}>{item.text}</Text>
+          <Text style={[styles.metaText, { color: color.icon }]}>
+            {item.dueDate ? formatDateOnly(item.dueDate) : "No date"}
+            {item.reminderAt ? ` · ${formatTime(item.reminderAt)}` : ""}
+          </Text>
+        </View>
+        <Text style={styles.statusBadge}>{STATUS_LABELS[item.status as Exclude<TodoStatus, "trashed">]}</Text>
+      </View>
+
+      <View style={styles.actionRow}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: color.tint }]} onPress={() => onCycle(item)}>
+          <Text style={styles.actionText}>Next</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: color.icon }]} onPress={() => onTrash(item.id)}>
+          <Text style={styles.actionText}>Trash</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+function AgendaTaskCard({
+  item,
+  color,
+  onCycle,
+  onTrash,
+}: {
+  item: Todo;
+  color: ColorPalette;
+  onCycle: (task: Todo) => void;
+  onTrash: (id: string) => void;
+}) {
+  return (
+    <View style={[styles.agendaCard, { borderColor: color.icon, backgroundColor: color.background }]}> 
+      <View style={styles.agendaLeft}>
+        <Text style={[styles.agendaDate, { color: color.text }]}>{item.dueDate ? formatFullDate(item.dueDate) : "No date"}</Text>
+        <Text style={[styles.agendaText, { color: color.text }]}>{item.text}</Text>
+        <Text style={[styles.metaText, { color: color.icon }]}>{STATUS_LABELS[item.status as Exclude<TodoStatus, "trashed">]} · {item.priority}</Text>
+      </View>
+      <View style={styles.agendaActions}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: color.tint }]} onPress={() => onCycle(item)}>
+          <Text style={styles.actionText}>Next</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: color.icon }]} onPress={() => onTrash(item.id)}>
+          <Text style={styles.actionText}>Trash</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
@@ -322,61 +383,63 @@ function formatDayTitle(value: string) {
   });
 }
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString(undefined, {
+function formatDateOnly(value: string) {
+  return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatFullDate(value: string) {
+  return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 }
 
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
+function formatTime(value: string) {
+  return new Date(value).toLocaleTimeString(undefined, {
     hour: "numeric",
     minute: "2-digit",
   });
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
-    padding: 20,
-    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingTop: 56,
+    paddingBottom: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
   },
-  title: {
-    fontSize: 30,
-    fontWeight: "700",
+  title: { fontSize: 30, fontWeight: "800" },
+  subtitle: { fontSize: 14, marginTop: 4 },
+  modeTabs: { flexDirection: "row", gap: 8 },
+  modeTab: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  subtitle: {
-    fontSize: 14,
-    marginTop: 5,
-  },
+  modeTabText: { fontSize: 13, fontWeight: "700" },
   summaryRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: 10,
     paddingHorizontal: 20,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   summaryCard: {
-    minWidth: "22%",
-    flexGrow: 1,
+    flex: 1,
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 18,
+    padding: 14,
   },
-  summaryValue: {
-    fontSize: 22,
-    fontWeight: "700",
-  },
-  summaryLabel: {
-    fontSize: 12,
-    marginTop: 4,
-  },
+  summaryValue: { fontSize: 24, fontWeight: "800" },
+  summaryLabel: { marginTop: 4, fontSize: 12, fontWeight: "600" },
   monthCard: {
     borderWidth: 1,
     borderRadius: 24,
@@ -390,35 +453,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  monthTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
+  monthTitle: { fontSize: 18, fontWeight: "800" },
   monthButton: {
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  monthButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  weekRow: {
-    flexDirection: "row",
-    marginBottom: 8,
-  },
-  weekLabel: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
+  monthButtonText: { fontSize: 13, fontWeight: "700" },
+  weekRow: { flexDirection: "row", marginBottom: 8 },
+  weekLabel: { flex: 1, textAlign: "center", fontSize: 12, fontWeight: "700" },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   dayCell: {
     width: "13.1%",
     aspectRatio: 1,
@@ -427,99 +472,64 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  dayNumber: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
+  dayNumber: { fontSize: 13, fontWeight: "700" },
   dayBadge: {
     marginTop: 6,
     borderRadius: 999,
     paddingHorizontal: 7,
     paddingVertical: 2,
   },
-  dayBadgeText: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  selectedDateRow: {
+  dayBadgeText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+  dateRow: {
     marginTop: 14,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  selectedDateLabel: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  selectedDateAction: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-  },
+  dateTitle: { fontSize: 16, fontWeight: "800" },
+  todayLink: { fontSize: 14, fontWeight: "800" },
+  listContent: { paddingHorizontal: 20, paddingBottom: 24 },
   taskCard: {
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 12,
+  },
+  taskTopRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  taskBody: { flex: 1 },
+  taskText: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
+  metaText: { fontSize: 12, fontWeight: "600" },
+  statusBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#e2e8f0",
+    color: "#0f172a",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  actionRow: { flexDirection: "row", gap: 8, marginTop: 12 },
+  actionButton: { borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10 },
+  actionText: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  agendaCard: {
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 12,
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 12,
-    borderWidth: 1,
+    gap: 12,
   },
-  taskCopy: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  taskText: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  metaText: {
-    fontSize: 12,
-  },
-  actions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  actionButton: {
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  actionText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  deleteButton: {
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  deleteText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "600",
-  },
+  agendaLeft: { flex: 1 },
+  agendaDate: { fontSize: 12, fontWeight: "700", marginBottom: 4 },
+  agendaText: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
+  agendaActions: { justifyContent: "center", gap: 8 },
   emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
+    paddingVertical: 36,
     alignItems: "center",
-    padding: 20,
-    minHeight: 220,
+    justifyContent: "center",
   },
-  emptyText: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: "center",
-  },
+  emptyText: { fontSize: 20, fontWeight: "800" },
+  emptySubtext: { marginTop: 6, fontSize: 14, textAlign: "center" },
 });
