@@ -1,30 +1,38 @@
 import React, { useMemo, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Keyboard,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  Keyboard,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { DatePickerModal } from "@/components/date-picker-modal";
 import { Colors } from "@/constants/theme";
 import {
-    TASK_STATUS_ORDER,
-    type Todo,
-    type TodoPriority,
-    type TodoStatus,
-    useTodos,
+  type Todo,
+  type TodoPriority,
+  type TodoStatus,
+  useTodos,
 } from "@/context/todo-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
+type ColorPalette = (typeof Colors)["light"];
+
+const STATUS_FLOW: Array<Exclude<TodoStatus, "trashed">> = [
+  "todo",
+  "in_progress",
+  "done",
+  "submitted",
+];
+
 const STATUS_LABELS: Record<Exclude<TodoStatus, "trashed">, string> = {
   todo: "Todo",
-  in_progress: "In progress",
+  in_progress: "Doing",
   done: "Done",
   submitted: "Submitted",
 };
@@ -38,140 +46,97 @@ const PRIORITY_LABELS: Record<TodoPriority, string> = {
 export default function TodoScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
-  const [task, setTask] = useState("");
+  const { tasks, addTask, updateTask, moveTaskToTrash } = useTodos();
+
+  const [taskText, setTaskText] = useState("");
   const [editingTask, setEditingTask] = useState<Todo | null>(null);
-  const [selectedStatus, setSelectedStatus] =
-    useState<Exclude<TodoStatus, "trashed">>("todo");
-  const [selectedPriority, setSelectedPriority] =
-    useState<TodoPriority>("medium");
+  const [priority, setPriority] = useState<TodoPriority>("medium");
   const [dueDate, setDueDate] = useState<string | null>(null);
-  const [alarmTime, setAlarmTime] = useState("");
+  const [alarmEnabled, setAlarmEnabled] = useState(false);
+  const [alarmTime, setAlarmTime] = useState("09:00");
   const [calendarVisible, setCalendarVisible] = useState(false);
-  const [filter, setFilter] = useState<"all" | Exclude<TodoStatus, "trashed">>(
-    "all",
+
+  const activeTasks = useMemo(
+    () => tasks.filter((task) => task.status !== "trashed"),
+    [tasks],
   );
 
-  const {
-    tasks,
-    todos,
-    inProgressTasks,
-    doneTasks,
-    submittedTasks,
-    activeTasks,
-    addTask,
-    updateTask,
-    toggleTask,
-    setTaskStatus,
-    moveTaskToTrash,
-  } = useTodos();
-
-  const reminderAt = useMemo(() => {
-    if (!dueDate || !alarmTime) {
-      return null;
-    }
-
-    const [hours, minutes] = alarmTime.split(":").map((value) => Number(value));
-    const [year, month, day] = dueDate.split("-").map((value) => Number(value));
-
-    if (
-      Number.isNaN(hours) ||
-      Number.isNaN(minutes) ||
-      Number.isNaN(year) ||
-      Number.isNaN(month) ||
-      Number.isNaN(day) ||
-      hours < 0 ||
-      hours > 23 ||
-      minutes < 0 ||
-      minutes > 59
-    ) {
-      return null;
-    }
-
-    return new Date(year, month - 1, day, hours, minutes, 0, 0).toISOString();
-  }, [alarmTime, dueDate]);
-
-  const filteredTasks = useMemo(() => {
-    const visibleTasks = tasks.filter((item) => item.status !== "trashed");
-
-    if (filter === "all") {
-      return visibleTasks;
-    }
-
-    return visibleTasks.filter((item) => item.status === filter);
-  }, [filter, tasks]);
-
-  const totals = useMemo(
-    () => ({
-      todo: todos.length,
-      in_progress: inProgressTasks.length,
-      done: doneTasks.length,
-      submitted: submittedTasks.length,
-    }),
-    [
-      doneTasks.length,
-      inProgressTasks.length,
-      submittedTasks.length,
-      todos.length,
-    ],
+  const todayCount = useMemo(
+    () =>
+      activeTasks.filter(
+        (task) => task.dueDate === toDateOnlyString(new Date()),
+      ).length,
+    [activeTasks],
   );
 
-  const resetForm = () => {
-    setTask("");
+  const upcomingCount = useMemo(
+    () =>
+      activeTasks.filter((task) => {
+        if (!task.dueDate) {
+          return false;
+        }
+
+        return task.dueDate >= toDateOnlyString(new Date());
+      }).length,
+    [activeTasks],
+  );
+
+  const resetComposer = () => {
+    setTaskText("");
     setEditingTask(null);
-    setSelectedStatus("todo");
-    setSelectedPriority("medium");
+    setPriority("medium");
     setDueDate(null);
-    setAlarmTime("");
+    setAlarmEnabled(false);
+    setAlarmTime("09:00");
   };
 
   const saveTask = () => {
-    const cleanText = task.trim();
+    const cleanText = taskText.trim();
 
     if (!cleanText) {
-      Alert.alert("Error", "Please enter a task");
+      Alert.alert("Missing task", "Enter a task title first.");
       return;
     }
+
+    const reminderAt = alarmEnabled ? buildReminderAt(dueDate, alarmTime) : null;
 
     if (editingTask) {
       updateTask(editingTask.id, {
         text: cleanText,
-        status: selectedStatus,
-        priority: selectedPriority,
+        priority,
         dueDate,
         reminderAt,
       });
     } else {
       addTask(cleanText, {
-        status: selectedStatus,
-        priority: selectedPriority,
+        priority,
         dueDate,
         reminderAt,
       });
     }
 
-    resetForm();
+    resetComposer();
     Keyboard.dismiss();
   };
 
-  const startEditTask = (todo: Todo) => {
-    setEditingTask(todo);
-    setTask(todo.text);
-    setSelectedStatus(todo.status === "trashed" ? "todo" : todo.status);
-    setSelectedPriority(todo.priority);
-    setDueDate(todo.dueDate ?? null);
-    setAlarmTime(formatTimeForInput(todo.reminderAt));
-    setCalendarVisible(false);
+  const startEditTask = (task: Todo) => {
+    setEditingTask(task);
+    setTaskText(task.text);
+    setPriority(task.priority);
+    setDueDate(task.dueDate ?? null);
+    setAlarmEnabled(Boolean(task.reminderAt));
+    setAlarmTime(formatTimeForInput(task.reminderAt) || "09:00");
   };
 
-  const cancelEdit = () => {
-    resetForm();
-  };
+  const cycleStatus = (task: Todo) => {
+    if (task.status === "trashed") {
+      return;
+    }
 
-  const sendTaskToTrash = (id: string) => {
-    Alert.alert("Move to Trash", "This task will be moved to Trash.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Move", onPress: () => moveTaskToTrash(id) },
-    ]);
+    const currentIndex = STATUS_FLOW.indexOf(task.status);
+    const nextStatus = STATUS_FLOW[(currentIndex + 1) % STATUS_FLOW.length];
+
+    updateTask(task.id, { status: nextStatus });
   };
 
   return (
@@ -179,198 +144,98 @@ export default function TodoScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <FlatList
-        data={filteredTasks}
+        data={activeTasks}
         keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
-            <View style={styles.header}>
-              <Text style={[styles.title, { color: colors.text }]}>
-                My Todo Planner
-              </Text>
-              <Text style={[styles.subtitle, { color: colors.icon }]}>
-                {activeTasks.length} active tasks with due dates and alarms
-              </Text>
+            <View style={styles.headerRow}>
+              <View>
+                <Text style={[styles.title, { color: colors.text }]}>Tasks</Text>
+                <Text style={[styles.subtitle, { color: colors.icon }]}>
+                  {todayCount} today · {upcomingCount} upcoming
+                </Text>
+              </View>
+              <View style={styles.headerPill}>
+                <Text style={styles.headerPillText}>Simple</Text>
+              </View>
             </View>
 
             <View style={styles.summaryRow}>
-              {[
-                { key: "todo", label: "Todo", value: totals.todo },
-                {
-                  key: "in_progress",
-                  label: "In progress",
-                  value: totals.in_progress,
-                },
-                { key: "done", label: "Done", value: totals.done },
-                {
-                  key: "submitted",
-                  label: "Submitted",
-                  value: totals.submitted,
-                },
-              ].map((item) => (
-                <View
-                  key={item.key}
-                  style={[
-                    styles.summaryCard,
-                    {
-                      borderColor: colors.icon,
-                      backgroundColor: colors.background,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.summaryValue, { color: colors.text }]}>
-                    {item.value}
-                  </Text>
-                  <Text style={[styles.summaryLabel, { color: colors.icon }]}>
-                    {item.label}
-                  </Text>
-                </View>
-              ))}
+              <SummaryCard label="Today" value={todayCount} color={colors} />
+              <SummaryCard
+                label="Upcoming"
+                value={upcomingCount}
+                color={colors}
+              />
             </View>
 
             <View
               style={[
-                styles.formCard,
+                styles.composerCard,
                 {
-                  borderColor: colors.icon,
                   backgroundColor: colors.background,
+                  borderColor: colors.icon,
                 },
               ]}
             >
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Task details
-              </Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick add</Text>
               <TextInput
                 style={[
                   styles.input,
-                  {
-                    color: colors.text,
-                    borderColor: colors.icon,
-                    backgroundColor: colors.background,
-                  },
+                  { color: colors.text, borderColor: colors.icon },
                 ]}
-                placeholder="Enter a new task..."
+                placeholder="What do you need to do?"
                 placeholderTextColor={colors.icon}
-                value={task}
-                onChangeText={setTask}
+                value={taskText}
+                onChangeText={setTaskText}
                 onSubmitEditing={saveTask}
+                returnKeyType="done"
               />
 
-              <Text style={[styles.fieldLabel, { color: colors.icon }]}>
-                Status
-              </Text>
               <View style={styles.chipRow}>
-                {TASK_STATUS_ORDER.map((status) => {
-                  const isSelected = selectedStatus === status;
-
-                  return (
-                    <TouchableOpacity
-                      key={status}
-                      style={[
-                        styles.chip,
-                        isSelected && {
-                          backgroundColor: colors.tint,
-                          borderColor: colors.tint,
-                        },
-                      ]}
-                      onPress={() => setSelectedStatus(status)}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          { color: isSelected ? "#fff" : colors.text },
-                        ]}
-                      >
-                        {STATUS_LABELS[status]}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <Text style={[styles.fieldLabel, { color: colors.icon }]}>
-                Priority
-              </Text>
-              <View style={styles.chipRow}>
-                {(["low", "medium", "high"] as const).map((priority) => {
-                  const isSelected = selectedPriority === priority;
-
-                  return (
-                    <TouchableOpacity
-                      key={priority}
-                      style={[
-                        styles.chip,
-                        isSelected && {
-                          backgroundColor: colors.tint,
-                          borderColor: colors.tint,
-                        },
-                      ]}
-                      onPress={() => setSelectedPriority(priority)}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          { color: isSelected ? "#fff" : colors.text },
-                        ]}
-                      >
-                        {PRIORITY_LABELS[priority]}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <View style={styles.reminderRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.dateButton,
-                    {
-                      borderColor: colors.icon,
-                      backgroundColor: colors.background,
-                    },
-                  ]}
-                  onPress={() => setCalendarVisible(true)}
-                >
-                  <Text
-                    style={[styles.dateButtonLabel, { color: colors.text }]}
-                  >
-                    Due date
-                  </Text>
-                  <Text
-                    style={[styles.dateButtonValue, { color: colors.icon }]}
-                  >
-                    {dueDate ? formatDateOnly(dueDate) : "Pick a day"}
-                  </Text>
-                </TouchableOpacity>
-
-                <View style={styles.timeBlock}>
-                  <Text style={[styles.fieldLabel, { color: colors.icon }]}>
-                    Alarm time
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.timeInput,
-                      {
-                        color: colors.text,
-                        borderColor: colors.icon,
-                        backgroundColor: colors.background,
-                      },
-                    ]}
-                    placeholder="09:00"
-                    placeholderTextColor={colors.icon}
-                    value={alarmTime}
-                    onChangeText={setAlarmTime}
+                {(["low", "medium", "high"] as const).map((item) => (
+                  <Chip
+                    key={item}
+                    label={PRIORITY_LABELS[item]}
+                    active={priority === item}
+                    onPress={() => setPriority(item)}
+                    color={colors}
                   />
-                </View>
+                ))}
               </View>
 
-              <View style={styles.formActions}>
-                <TouchableOpacity
+              <View style={styles.composerRow}>
+                <SmallButton
+                  label={dueDate ? formatDateOnly(dueDate) : "Add date"}
+                  onPress={() => setCalendarVisible(true)}
+                  color={colors}
+                />
+                <SmallButton
+                  label={alarmEnabled ? `Alarm ${alarmTime}` : "Add alarm"}
+                  onPress={() => setAlarmEnabled((value) => !value)}
+                  active={alarmEnabled}
+                  color={colors}
+                />
+              </View>
+
+              {alarmEnabled ? (
+                <TextInput
                   style={[
-                    styles.primaryButton,
-                    { backgroundColor: colors.tint },
+                    styles.timeInput,
+                    { color: colors.text, borderColor: colors.icon },
                   ]}
+                  placeholder="09:00"
+                  placeholderTextColor={colors.icon}
+                  value={alarmTime}
+                  onChangeText={setAlarmTime}
+                />
+              ) : null}
+
+              <View style={styles.composerActions}>
+                <TouchableOpacity
+                  style={[styles.primaryButton, { backgroundColor: colors.tint }]}
                   onPress={saveTask}
                 >
                   <Text style={styles.primaryButtonText}>
@@ -380,101 +245,57 @@ export default function TodoScreen() {
 
                 {editingTask ? (
                   <TouchableOpacity
-                    style={[
-                      styles.secondaryButton,
-                      { borderColor: colors.icon },
-                    ]}
-                    onPress={cancelEdit}
+                    style={[styles.ghostButton, { borderColor: colors.icon }]}
+                    onPress={resetComposer}
                   >
-                    <Text
-                      style={[
-                        styles.secondaryButtonText,
-                        { color: colors.text },
-                      ]}
-                    >
-                      Cancel
-                    </Text>
+                    <Text style={[styles.ghostButtonText, { color: colors.text }]}>Cancel</Text>
                   </TouchableOpacity>
                 ) : null}
               </View>
             </View>
 
-            <View style={styles.filterRow}>
-              {(["all", ...TASK_STATUS_ORDER] as const).map((item) => {
-                const label = item === "all" ? "All" : STATUS_LABELS[item];
-                const isSelected = filter === item;
-
-                return (
-                  <TouchableOpacity
-                    key={item}
-                    style={[
-                      styles.filterChip,
-                      isSelected && {
-                        backgroundColor: colors.tint,
-                        borderColor: colors.tint,
-                      },
-                    ]}
-                    onPress={() => setFilter(item)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterText,
-                        { color: isSelected ? "#fff" : colors.text },
-                      ]}
-                    >
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Tasks
-            </Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Inbox</Text>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.text }]}>
-              No tasks yet!
-            </Text>
-            <Text style={[styles.emptySubtext, { color: colors.icon }]}>
-              Add a task, pick a day, and set an alarm to turn it into a
-              reminder.
-            </Text>
+            <Text style={[styles.emptyText, { color: colors.text }]}>No tasks yet</Text>
+            <Text style={[styles.emptySubtext, { color: colors.icon }]}>Add one task and keep it simple.</Text>
           </View>
         }
         renderItem={({ item }) => (
           <View
             style={[
-              styles.taskItem,
+              styles.taskCard,
               {
                 backgroundColor: colors.background,
                 borderColor: colors.icon,
               },
             ]}
           >
-            <View style={styles.taskBody}>
-              <Text style={[styles.taskText, { color: colors.text }]}>
-                {item.text}
-              </Text>
-              <View style={styles.metaRow}>
+            <View style={styles.taskTopRow}>
+              <View style={styles.taskBody}>
+                <Text style={[styles.taskText, { color: colors.text }]}>{item.text}</Text>
                 <Text style={[styles.metaText, { color: colors.icon }]}>
-                  {STATUS_LABELS[item.status as Exclude<TodoStatus, "trashed">]}
-                </Text>
-                <Text style={[styles.metaText, { color: colors.icon }]}>
-                  Priority {PRIORITY_LABELS[item.priority]}
+                  {item.dueDate ? formatDateOnly(item.dueDate) : "No date"}
                 </Text>
               </View>
-              <Text style={[styles.metaText, { color: colors.icon }]}>
-                Created {formatDate(item.createdAt)}
-              </Text>
-              {item.dueDate ? (
-                <Text style={[styles.metaText, { color: colors.icon }]}>
-                  Due {formatDateOnly(item.dueDate)}
+              <View style={styles.priorityBadge}>
+                <Text style={styles.priorityBadgeText}>{PRIORITY_LABELS[item.priority]}</Text>
+              </View>
+            </View>
+
+            <View style={styles.metaRow}>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: statusColor(item.status) },
+                ]}
+              >
+                <Text style={styles.statusBadgeText}>
+                  {STATUS_LABELS[item.status as Exclude<TodoStatus, "trashed">]}
                 </Text>
-              ) : null}
+              </View>
               {item.reminderAt ? (
                 <Text style={[styles.metaText, { color: colors.icon }]}>
                   Alarm {formatReminder(item.reminderAt)}
@@ -482,35 +303,24 @@ export default function TodoScreen() {
               ) : null}
             </View>
 
-            <View style={styles.actions}>
+            <View style={styles.actionRow}>
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: colors.tint }]}
+                onPress={() => cycleStatus(item)}
+              >
+                <Text style={styles.actionText}>Next</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: colors.icon }]}
                 onPress={() => startEditTask(item)}
               >
                 <Text style={styles.actionText}>Edit</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: colors.icon }]}
-                onPress={() => toggleTask(item.id)}
+                onPress={() => moveTaskToTrash(item.id)}
               >
-                <Text style={styles.actionText}>Next</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.deleteButton, { backgroundColor: colors.icon }]}
-                onPress={() => sendTaskToTrash(item.id)}
-              >
-                <Text style={styles.deleteText}>Trash</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: colors.tint }]}
-                onPress={() =>
-                  setTaskStatus(
-                    item.id,
-                    item.status === "done" ? "todo" : "done",
-                  )
-                }
-              >
-                <Text style={styles.actionText}>Done</Text>
+                <Text style={styles.actionText}>Trash</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -521,14 +331,112 @@ export default function TodoScreen() {
         visible={calendarVisible}
         initialDate={dueDate}
         onClose={() => setCalendarVisible(false)}
-        onSelect={(value) => {
-          setDueDate(value);
-          setCalendarVisible(false);
-        }}
+        onSelect={(value) => setDueDate(value)}
         onClear={() => setDueDate(null)}
       />
     </SafeAreaView>
   );
+}
+
+function SummaryCard({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: ColorPalette;
+}) {
+  return (
+    <View
+      style={[
+        styles.summaryCard,
+        { borderColor: color.icon, backgroundColor: color.background },
+      ]}
+    >
+      <Text style={[styles.summaryValue, { color: color.text }]}>{value}</Text>
+      <Text style={[styles.summaryLabel, { color: color.icon }]}>{label}</Text>
+    </View>
+  );
+}
+
+function Chip({
+  label,
+  active,
+  onPress,
+  color,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+  color: ColorPalette;
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.chip,
+        { borderColor: color.icon },
+        active && { borderColor: color.tint, backgroundColor: color.tint },
+      ]}
+      onPress={onPress}
+    >
+      <Text style={[styles.chipText, { color: active ? "#fff" : color.text }]}> {label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function SmallButton({
+  label,
+  onPress,
+  active,
+  color,
+}: {
+  label: string;
+  onPress: () => void;
+  active?: boolean;
+  color: ColorPalette;
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.smallButton,
+        { borderColor: color.icon },
+        active && { borderColor: color.tint, backgroundColor: color.tint },
+      ]}
+      onPress={onPress}
+    >
+      <Text style={[styles.smallButtonText, { color: active ? "#fff" : color.text }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function toDateOnlyString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function buildReminderAt(dueDate: string | null, alarmTime: string) {
+  if (!dueDate) {
+    return null;
+  }
+
+  const [year, month, day] = dueDate.split("-").map((part) => Number(part));
+  const [hours, minutes] = alarmTime.split(":").map((part) => Number(part));
+
+  if (
+    Number.isNaN(year) ||
+    Number.isNaN(month) ||
+    Number.isNaN(day) ||
+    Number.isNaN(hours) ||
+    Number.isNaN(minutes)
+  ) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day, hours, minutes, 0, 0).toISOString();
 }
 
 function formatTimeForInput(value?: string | null) {
@@ -549,15 +457,6 @@ function formatDateOnly(value: string) {
   return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
   });
 }
 
@@ -570,236 +469,146 @@ function formatReminder(value: string) {
   });
 }
 
+function statusColor(status: TodoStatus) {
+  switch (status) {
+    case "todo":
+      return "#dbeafe";
+    case "in_progress":
+      return "#fef3c7";
+    case "done":
+      return "#dcfce7";
+    case "submitted":
+      return "#e0e7ff";
+    default:
+      return "#e2e8f0";
+  }
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingBottom: 12,
-    borderBottomWidth: 1,
+  container: { flex: 1 },
+  listContent: { padding: 20, paddingBottom: 32 },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 14,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "700",
+  title: { fontSize: 32, fontWeight: "800" },
+  subtitle: { marginTop: 4, fontSize: 14 },
+  headerPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#0f172a",
   },
-  subtitle: {
-    fontSize: 14,
-    marginTop: 5,
-  },
-  listContent: {
-    padding: 20,
-    paddingBottom: 32,
-  },
+  headerPillText: { color: "#fff", fontSize: 12, fontWeight: "700" },
   summaryRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: 10,
-    marginBottom: 12,
-  },
-  summaryCard: {
-    minWidth: "22%",
-    flexGrow: 1,
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
-  },
-  summaryValue: {
-    fontSize: 22,
-    fontWeight: "700",
-  },
-  summaryLabel: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  formCard: {
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 16,
     marginBottom: 14,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  fieldLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    marginTop: 14,
-    marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
-  input: {
-    marginTop: 10,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  chip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  reminderRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 6,
-    alignItems: "flex-start",
-  },
-  dateButton: {
+  summaryCard: {
     flex: 1,
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 14,
+  },
+  summaryValue: { fontSize: 24, fontWeight: "800" },
+  summaryLabel: { marginTop: 4, fontSize: 12, fontWeight: "600" },
+  composerCard: {
+    borderWidth: 1,
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: { fontSize: 18, fontWeight: "800", marginBottom: 10 },
+  input: {
     borderWidth: 1,
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
-  },
-  dateButtonLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  dateButtonValue: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  timeBlock: {
-    width: 120,
-  },
-  timeInput: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
     fontSize: 16,
+    marginBottom: 12,
   },
-  formActions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 16,
-  },
-  primaryButton: {
-    borderRadius: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    justifyContent: "center",
-    alignItems: "center",
-    flex: 1,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  filterRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 14,
-  },
-  filterChip: {
+  chipRow: { flexDirection: "row", gap: 8, marginBottom: 12, flexWrap: "wrap" },
+  chip: {
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  filterText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  taskItem: {
-    padding: 16,
-    marginTop: 10,
-    borderRadius: 18,
+  chipText: { fontSize: 12, fontWeight: "700" },
+  composerRow: { flexDirection: "row", gap: 10, marginBottom: 12 },
+  smallButton: {
+    flex: 1,
     borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    alignItems: "center",
   },
-  taskBody: {
+  smallButtonText: { fontSize: 13, fontWeight: "700" },
+  timeInput: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
     marginBottom: 12,
   },
-  metaRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginTop: 6,
-  },
-  taskText: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  metaText: {
-    fontSize: 12,
-  },
-  actions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  actionButton: {
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  actionText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  deleteButton: {
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  deleteText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  emptyContainer: {
+  composerActions: { flexDirection: "row", gap: 10 },
+  primaryButton: {
     flex: 1,
-    justifyContent: "center",
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: "center",
-    padding: 30,
-    minHeight: 240,
   },
-  emptyText: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 10,
+  primaryButtonText: { color: "#fff", fontSize: 15, fontWeight: "800" },
+  ghostButton: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    alignItems: "center",
   },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: "center",
+  ghostButtonText: { fontSize: 15, fontWeight: "700" },
+  taskCard: {
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 12,
   },
+  taskTopRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  taskBody: { flex: 1 },
+  taskText: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
+  metaText: { fontSize: 12, fontWeight: "600" },
+  priorityBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#0f172a",
+  },
+  priorityBadgeText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  metaRow: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 8, marginBottom: 12 },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#0f172a",
+  },
+  actionRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  actionButton: { borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10 },
+  actionText: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  emptyContainer: {
+    paddingVertical: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: { fontSize: 20, fontWeight: "800" },
+  emptySubtext: { marginTop: 6, fontSize: 14, textAlign: "center" },
 });
