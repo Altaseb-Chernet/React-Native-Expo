@@ -1,23 +1,23 @@
 import React, { useMemo, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Keyboard,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    FlatList,
+    Keyboard,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { DatePickerModal } from "@/components/date-picker-modal";
 import { Colors } from "@/constants/theme";
 import {
-  type Todo,
-  type TodoPriority,
-  type TodoStatus,
-  useTodos,
+    type Todo,
+    type TodoPriority,
+    type TodoStatus,
+    useTodos,
 } from "@/context/todo-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -98,7 +98,9 @@ export default function TodoScreen() {
       return;
     }
 
-    const reminderAt = alarmEnabled ? buildReminderAt(dueDate, alarmTime) : null;
+    const reminderAt = alarmEnabled
+      ? buildReminderAt(dueDate, alarmTime)
+      : null;
 
     if (editingTask) {
       updateTask(editingTask.id, {
@@ -152,7 +154,9 @@ export default function TodoScreen() {
           <View>
             <View style={styles.headerRow}>
               <View>
-                <Text style={[styles.title, { color: colors.text }]}>Tasks</Text>
+                <Text style={[styles.title, { color: colors.text }]}>
+                  Tasks
+                </Text>
                 <Text style={[styles.subtitle, { color: colors.icon }]}>
                   {todayCount} today · {upcomingCount} upcoming
                 </Text>
@@ -180,7 +184,9 @@ export default function TodoScreen() {
                 },
               ]}
             >
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick add</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Quick add
+              </Text>
               <TextInput
                 style={[
                   styles.input,
@@ -235,7 +241,10 @@ export default function TodoScreen() {
 
               <View style={styles.composerActions}>
                 <TouchableOpacity
-                  style={[styles.primaryButton, { backgroundColor: colors.tint }]}
+                  style={[
+                    styles.primaryButton,
+                    { backgroundColor: colors.tint },
+                  ]}
                   onPress={saveTask}
                 >
                   <Text style={styles.primaryButtonText}>
@@ -248,19 +257,29 @@ export default function TodoScreen() {
                     style={[styles.ghostButton, { borderColor: colors.icon }]}
                     onPress={resetComposer}
                   >
-                    <Text style={[styles.ghostButtonText, { color: colors.text }]}>Cancel</Text>
+                    <Text
+                      style={[styles.ghostButtonText, { color: colors.text }]}
+                    >
+                      Cancel
+                    </Text>
                   </TouchableOpacity>
                 ) : null}
               </View>
             </View>
 
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Inbox</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Inbox
+            </Text>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.text }]}>No tasks yet</Text>
-            <Text style={[styles.emptySubtext, { color: colors.icon }]}>Add one task and keep it simple.</Text>
+            <Text style={[styles.emptyText, { color: colors.text }]}>
+              No tasks yet
+            </Text>
+            <Text style={[styles.emptySubtext, { color: colors.icon }]}>
+              Add one task and keep it simple.
+            </Text>
           </View>
         }
         renderItem={({ item }) => (
@@ -275,13 +294,17 @@ export default function TodoScreen() {
           >
             <View style={styles.taskTopRow}>
               <View style={styles.taskBody}>
-                <Text style={[styles.taskText, { color: colors.text }]}>{item.text}</Text>
+                <Text style={[styles.taskText, { color: colors.text }]}>
+                  {item.text}
+                </Text>
                 <Text style={[styles.metaText, { color: colors.icon }]}>
                   {item.dueDate ? formatDateOnly(item.dueDate) : "No date"}
                 </Text>
               </View>
               <View style={styles.priorityBadge}>
-                <Text style={styles.priorityBadgeText}>{PRIORITY_LABELS[item.priority]}</Text>
+                <Text style={styles.priorityBadgeText}>
+                  {PRIORITY_LABELS[item.priority]}
+                </Text>
               </View>
             </View>
 
@@ -380,7 +403,10 @@ function Chip({
       ]}
       onPress={onPress}
     >
-      <Text style={[styles.chipText, { color: active ? "#fff" : color.text }]}> {label}</Text>
+      <Text style={[styles.chipText, { color: active ? "#fff" : color.text }]}>
+        {" "}
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -405,7 +431,14 @@ function SmallButton({
       ]}
       onPress={onPress}
     >
-      <Text style={[styles.smallButtonText, { color: active ? "#fff" : color.text }]}>{label}</Text>
+      <Text
+        style={[
+          styles.smallButtonText,
+          { color: active ? "#fff" : color.text },
+        ]}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -578,7 +611,11 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
-  taskTopRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  taskTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   taskBody: { flex: 1 },
   taskText: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
   metaText: { fontSize: 12, fontWeight: "600" },
@@ -590,7 +627,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f172a",
   },
   priorityBadgeText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  metaRow: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 8, marginBottom: 12 },
+  metaRow: {
+    flexDirection: "row",
+    gap: 10,
+    flexWrap: "wrap",
+    marginTop: 8,
+    marginBottom: 12,
+  },
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -602,7 +645,11 @@ const styles = StyleSheet.create({
     color: "#0f172a",
   },
   actionRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  actionButton: { borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10 },
+  actionButton: {
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   actionText: { color: "#fff", fontSize: 12, fontWeight: "800" },
   emptyContainer: {
     paddingVertical: 36,

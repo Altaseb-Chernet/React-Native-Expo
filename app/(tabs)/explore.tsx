@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from "react";
 import {
-  FlatList,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    FlatList,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { Colors } from "@/constants/theme";
@@ -29,7 +29,9 @@ export default function CalendarScreen() {
 
   const [mode, setMode] = useState<ViewMode>("month");
   const [monthCursor, setMonthCursor] = useState(() => new Date());
-  const [selectedDate, setSelectedDate] = useState(() => toDateOnlyString(new Date()));
+  const [selectedDate, setSelectedDate] = useState(() =>
+    toDateOnlyString(new Date()),
+  );
 
   const visibleTasks = useMemo(
     () => tasks.filter((task) => task.status !== "trashed"),
@@ -61,10 +63,7 @@ export default function CalendarScreen() {
   }, [monthCursor]);
 
   const selectedDateTasks = useMemo(
-    () =>
-      visibleTasks.filter(
-        (task) => task.dueDate === selectedDate,
-      ),
+    () => visibleTasks.filter((task) => task.dueDate === selectedDate),
     [selectedDate, visibleTasks],
   );
 
@@ -88,7 +87,9 @@ export default function CalendarScreen() {
         return counts;
       }
 
-      counts[day.value] = visibleTasks.filter((task) => task.dueDate === day.value).length;
+      counts[day.value] = visibleTasks.filter(
+        (task) => task.dueDate === day.value,
+      ).length;
       return counts;
     }, {});
   }, [monthDays, visibleTasks]);
@@ -96,9 +97,11 @@ export default function CalendarScreen() {
   const totals = useMemo(
     () => ({
       todo: visibleTasks.filter((task) => task.status === "todo").length,
-      in_progress: visibleTasks.filter((task) => task.status === "in_progress").length,
+      in_progress: visibleTasks.filter((task) => task.status === "in_progress")
+        .length,
       done: visibleTasks.filter((task) => task.status === "done").length,
-      submitted: visibleTasks.filter((task) => task.status === "submitted").length,
+      submitted: visibleTasks.filter((task) => task.status === "submitted")
+        .length,
     }),
     [visibleTasks],
   );
@@ -111,7 +114,9 @@ export default function CalendarScreen() {
       "submitted",
     ];
 
-    const currentIndex = order.indexOf(task.status === "trashed" ? "todo" : task.status);
+    const currentIndex = order.indexOf(
+      task.status === "trashed" ? "todo" : task.status,
+    );
     const nextStatus = order[(currentIndex + 1) % order.length];
 
     updateTask(task.id, { status: nextStatus });
@@ -130,8 +135,18 @@ export default function CalendarScreen() {
         </View>
 
         <View style={styles.modeTabs}>
-          <ModeTab label="Month" active={mode === "month"} onPress={() => setMode("month")} color={colors} />
-          <ModeTab label="Agenda" active={mode === "agenda"} onPress={() => setMode("agenda")} color={colors} />
+          <ModeTab
+            label="Month"
+            active={mode === "month"}
+            onPress={() => setMode("month")}
+            color={colors}
+          />
+          <ModeTab
+            label="Agenda"
+            active={mode === "agenda"}
+            onPress={() => setMode("agenda")}
+            color={colors}
+          />
         </View>
       </View>
 
@@ -142,17 +157,25 @@ export default function CalendarScreen() {
         <SummaryCard label="Sent" value={totals.submitted} color={colors} />
       </View>
 
-      <View style={[styles.monthCard, { backgroundColor: colors.background, borderColor: colors.icon }]}> 
+      <View
+        style={[
+          styles.monthCard,
+          { backgroundColor: colors.background, borderColor: colors.icon },
+        ]}
+      >
         <View style={styles.monthHeader}>
           <TouchableOpacity
             style={[styles.monthButton, { borderColor: colors.icon }]}
             onPress={() =>
               setMonthCursor(
-                (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1),
+                (current) =>
+                  new Date(current.getFullYear(), current.getMonth() - 1, 1),
               )
             }
           >
-            <Text style={[styles.monthButtonText, { color: colors.text }]}>Prev</Text>
+            <Text style={[styles.monthButtonText, { color: colors.text }]}>
+              Prev
+            </Text>
           </TouchableOpacity>
 
           <Text style={[styles.monthTitle, { color: colors.text }]}>
@@ -166,11 +189,14 @@ export default function CalendarScreen() {
             style={[styles.monthButton, { borderColor: colors.icon }]}
             onPress={() =>
               setMonthCursor(
-                (current) => new Date(current.getFullYear(), current.getMonth() + 1, 1),
+                (current) =>
+                  new Date(current.getFullYear(), current.getMonth() + 1, 1),
               )
             }
           >
-            <Text style={[styles.monthButtonText, { color: colors.text }]}>Next</Text>
+            <Text style={[styles.monthButtonText, { color: colors.text }]}>
+              Next
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -197,15 +223,32 @@ export default function CalendarScreen() {
                 style={[
                   styles.dayCell,
                   { borderColor: colors.icon },
-                  isSelected && { backgroundColor: colors.tint, borderColor: colors.tint },
+                  isSelected && {
+                    backgroundColor: colors.tint,
+                    borderColor: colors.tint,
+                  },
                 ]}
                 onPress={() => setSelectedDate(day.value as string)}
               >
-                <Text style={[styles.dayNumber, { color: isSelected ? "#fff" : colors.text }]}>
+                <Text
+                  style={[
+                    styles.dayNumber,
+                    { color: isSelected ? "#fff" : colors.text },
+                  ]}
+                >
                   {day.label}
                 </Text>
                 {count > 0 ? (
-                  <View style={[styles.dayBadge, { backgroundColor: isSelected ? "rgba(255,255,255,0.28)" : colors.tint }]}> 
+                  <View
+                    style={[
+                      styles.dayBadge,
+                      {
+                        backgroundColor: isSelected
+                          ? "rgba(255,255,255,0.28)"
+                          : colors.tint,
+                      },
+                    ]}
+                  >
                     <Text style={styles.dayBadgeText}>{count}</Text>
                   </View>
                 ) : null}
@@ -218,8 +261,12 @@ export default function CalendarScreen() {
           <Text style={[styles.dateTitle, { color: colors.text }]}>
             {formatDayTitle(selectedDate)}
           </Text>
-          <TouchableOpacity onPress={() => setSelectedDate(toDateOnlyString(new Date()))}>
-            <Text style={[styles.todayLink, { color: colors.tint }]}>Today</Text>
+          <TouchableOpacity
+            onPress={() => setSelectedDate(toDateOnlyString(new Date()))}
+          >
+            <Text style={[styles.todayLink, { color: colors.tint }]}>
+              Today
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -227,8 +274,12 @@ export default function CalendarScreen() {
       {mode === "month" ? (
         selectedDateTasks.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.text }]}>No tasks on this day</Text>
-            <Text style={[styles.emptySubtext, { color: colors.icon }]}>Pick another date or add a new task from the Tasks tab.</Text>
+            <Text style={[styles.emptyText, { color: colors.text }]}>
+              No tasks on this day
+            </Text>
+            <Text style={[styles.emptySubtext, { color: colors.icon }]}>
+              Pick another date or add a new task from the Tasks tab.
+            </Text>
           </View>
         ) : (
           <FlatList
@@ -236,13 +287,24 @@ export default function CalendarScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => <CalendarTaskCard item={item} color={colors} onCycle={cycleStatus} onTrash={moveTaskToTrash} />}
+            renderItem={({ item }) => (
+              <CalendarTaskCard
+                item={item}
+                color={colors}
+                onCycle={cycleStatus}
+                onTrash={moveTaskToTrash}
+              />
+            )}
           />
         )
       ) : agendaTasks.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { color: colors.text }]}>No agenda items</Text>
-          <Text style={[styles.emptySubtext, { color: colors.icon }]}>Add due dates to tasks and they will appear here.</Text>
+          <Text style={[styles.emptyText, { color: colors.text }]}>
+            No agenda items
+          </Text>
+          <Text style={[styles.emptySubtext, { color: colors.icon }]}>
+            Add due dates to tasks and they will appear here.
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -250,7 +312,14 @@ export default function CalendarScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => <AgendaTaskCard item={item} color={colors} onCycle={cycleStatus} onTrash={moveTaskToTrash} />}
+          renderItem={({ item }) => (
+            <AgendaTaskCard
+              item={item}
+              color={colors}
+              onCycle={cycleStatus}
+              onTrash={moveTaskToTrash}
+            />
+          )}
         />
       )}
     </SafeAreaView>
@@ -267,7 +336,12 @@ function SummaryCard({
   color: ColorPalette;
 }) {
   return (
-    <View style={[styles.summaryCard, { borderColor: color.icon, backgroundColor: color.background }]}> 
+    <View
+      style={[
+        styles.summaryCard,
+        { borderColor: color.icon, backgroundColor: color.background },
+      ]}
+    >
       <Text style={[styles.summaryValue, { color: color.text }]}>{value}</Text>
       <Text style={[styles.summaryLabel, { color: color.icon }]}>{label}</Text>
     </View>
@@ -294,7 +368,11 @@ function ModeTab({
       ]}
       onPress={onPress}
     >
-      <Text style={[styles.modeTabText, { color: active ? "#fff" : color.text }]}>{label}</Text>
+      <Text
+        style={[styles.modeTabText, { color: active ? "#fff" : color.text }]}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -311,23 +389,38 @@ function CalendarTaskCard({
   onTrash: (id: string) => void;
 }) {
   return (
-    <View style={[styles.taskCard, { borderColor: color.icon, backgroundColor: color.background }]}> 
+    <View
+      style={[
+        styles.taskCard,
+        { borderColor: color.icon, backgroundColor: color.background },
+      ]}
+    >
       <View style={styles.taskTopRow}>
         <View style={styles.taskBody}>
-          <Text style={[styles.taskText, { color: color.text }]}>{item.text}</Text>
+          <Text style={[styles.taskText, { color: color.text }]}>
+            {item.text}
+          </Text>
           <Text style={[styles.metaText, { color: color.icon }]}>
             {item.dueDate ? formatDateOnly(item.dueDate) : "No date"}
             {item.reminderAt ? ` · ${formatTime(item.reminderAt)}` : ""}
           </Text>
         </View>
-        <Text style={styles.statusBadge}>{STATUS_LABELS[item.status as Exclude<TodoStatus, "trashed">]}</Text>
+        <Text style={styles.statusBadge}>
+          {STATUS_LABELS[item.status as Exclude<TodoStatus, "trashed">]}
+        </Text>
       </View>
 
       <View style={styles.actionRow}>
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: color.tint }]} onPress={() => onCycle(item)}>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: color.tint }]}
+          onPress={() => onCycle(item)}
+        >
           <Text style={styles.actionText}>Next</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: color.icon }]} onPress={() => onTrash(item.id)}>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: color.icon }]}
+          onPress={() => onTrash(item.id)}
+        >
           <Text style={styles.actionText}>Trash</Text>
         </TouchableOpacity>
       </View>
@@ -347,17 +440,35 @@ function AgendaTaskCard({
   onTrash: (id: string) => void;
 }) {
   return (
-    <View style={[styles.agendaCard, { borderColor: color.icon, backgroundColor: color.background }]}> 
+    <View
+      style={[
+        styles.agendaCard,
+        { borderColor: color.icon, backgroundColor: color.background },
+      ]}
+    >
       <View style={styles.agendaLeft}>
-        <Text style={[styles.agendaDate, { color: color.text }]}>{item.dueDate ? formatFullDate(item.dueDate) : "No date"}</Text>
-        <Text style={[styles.agendaText, { color: color.text }]}>{item.text}</Text>
-        <Text style={[styles.metaText, { color: color.icon }]}>{STATUS_LABELS[item.status as Exclude<TodoStatus, "trashed">]} · {item.priority}</Text>
+        <Text style={[styles.agendaDate, { color: color.text }]}>
+          {item.dueDate ? formatFullDate(item.dueDate) : "No date"}
+        </Text>
+        <Text style={[styles.agendaText, { color: color.text }]}>
+          {item.text}
+        </Text>
+        <Text style={[styles.metaText, { color: color.icon }]}>
+          {STATUS_LABELS[item.status as Exclude<TodoStatus, "trashed">]} ·{" "}
+          {item.priority}
+        </Text>
       </View>
       <View style={styles.agendaActions}>
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: color.tint }]} onPress={() => onCycle(item)}>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: color.tint }]}
+          onPress={() => onCycle(item)}
+        >
           <Text style={styles.actionText}>Next</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: color.icon }]} onPress={() => onTrash(item.id)}>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: color.icon }]}
+          onPress={() => onTrash(item.id)}
+        >
           <Text style={styles.actionText}>Trash</Text>
         </TouchableOpacity>
       </View>
@@ -495,7 +606,11 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
-  taskTopRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  taskTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   taskBody: { flex: 1 },
   taskText: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
   metaText: { fontSize: 12, fontWeight: "600" },
@@ -510,7 +625,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   actionRow: { flexDirection: "row", gap: 8, marginTop: 12 },
-  actionButton: { borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10 },
+  actionButton: {
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   actionText: { color: "#fff", fontSize: 12, fontWeight: "800" },
   agendaCard: {
     borderWidth: 1,
