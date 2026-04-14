@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
   },
   dateTitle: { fontSize: 16, fontWeight: "800" },
   todayLink: { fontSize: 14, fontWeight: "800" },
-  listContent: { paddingHorizontal: 20, paddingBottom: 24 },
+  listContent: { paddingHorizontal: 20, paddingBottom: 124 },
   taskCard: {
     borderWidth: 1,
     borderRadius: 24,
