@@ -81,6 +81,15 @@ export default function TodoScreen() {
     [activeTasks],
   );
 
+  const completedCount = useMemo(
+    () => activeTasks.filter((task) => task.status === "done").length,
+    [activeTasks],
+  );
+
+  const completionRate = activeTasks.length
+    ? Math.round((completedCount / activeTasks.length) * 100)
+    : 0;
+
   const resetComposer = () => {
     setTaskText("");
     setEditingTask(null);
@@ -158,39 +167,73 @@ export default function TodoScreen() {
                   Tasks
                 </Text>
                 <Text style={[styles.subtitle, { color: colors.icon }]}>
-                  {todayCount} today · {upcomingCount} upcoming
+                  {todayCount} due today · {upcomingCount} upcoming
                 </Text>
               </View>
               <View style={styles.headerPill}>
-                <Text style={styles.headerPillText}>Simple</Text>
+                <Text style={styles.headerPillText}>Focus mode</Text>
               </View>
             </View>
 
-            <View style={styles.summaryRow}>
-              <SummaryCard label="Today" value={todayCount} color={colors} />
-              <SummaryCard
-                label="Upcoming"
-                value={upcomingCount}
-                color={colors}
-              />
+            <View
+              style={[
+                styles.heroCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.heroCopy}>
+                <Text style={[styles.heroTitle, { color: colors.text }]}>
+                  Keep the next action visible.
+                </Text>
+                <Text style={[styles.heroSubtitle, { color: colors.icon }]}>
+                  {activeTasks.length} active tasks, {completedCount} completed,
+                  and a {completionRate}% finish rate.
+                </Text>
+              </View>
+
+              <View style={styles.progressShell}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${Math.max(completionRate, 8)}%`,
+                      backgroundColor: colors.tint,
+                    },
+                  ]}
+                />
+              </View>
+
+              <View style={styles.heroStatsRow}>
+                <SummaryCard label="Today" value={todayCount} color={colors} />
+                <SummaryCard label="Open" value={activeTasks.length} color={colors} />
+                <SummaryCard label="Done" value={completedCount} color={colors} />
+              </View>
             </View>
 
             <View
               style={[
                 styles.composerCard,
                 {
-                  backgroundColor: colors.background,
-                  borderColor: colors.icon,
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
                 },
               ]}
             >
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Quick add
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick add</Text>
+              <Text style={[styles.sectionHint, { color: colors.icon }]}>
+                Capture the task now, then refine the details if needed.
               </Text>
               <TextInput
                 style={[
                   styles.input,
-                  { color: colors.text, borderColor: colors.icon },
+                  {
+                    color: colors.text,
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                  },
                 ]}
                 placeholder="What do you need to do?"
                 placeholderTextColor={colors.icon}
@@ -230,7 +273,11 @@ export default function TodoScreen() {
                 <TextInput
                   style={[
                     styles.timeInput,
-                    { color: colors.text, borderColor: colors.icon },
+                    {
+                      color: colors.text,
+                      borderColor: colors.border,
+                      backgroundColor: colors.background,
+                    },
                   ]}
                   placeholder="09:00"
                   placeholderTextColor={colors.icon}
@@ -287,8 +334,8 @@ export default function TodoScreen() {
             style={[
               styles.taskCard,
               {
-                backgroundColor: colors.background,
-                borderColor: colors.icon,
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
               },
             ]}
           >
@@ -320,9 +367,11 @@ export default function TodoScreen() {
                 </Text>
               </View>
               {item.reminderAt ? (
-                <Text style={[styles.metaText, { color: colors.icon }]}>
-                  Alarm {formatReminder(item.reminderAt)}
-                </Text>
+                <View style={styles.inlineMetaPill}>
+                  <Text style={[styles.inlineMetaText, { color: colors.text }]}>
+                    Alarm {formatReminder(item.reminderAt)}
+                  </Text>
+                </View>
               ) : null}
             </View>
 
@@ -374,7 +423,7 @@ function SummaryCard({
     <View
       style={[
         styles.summaryCard,
-        { borderColor: color.icon, backgroundColor: color.background },
+        { borderColor: color.border, backgroundColor: color.surface },
       ]}
     >
       <Text style={[styles.summaryValue, { color: color.text }]}>{value}</Text>
@@ -519,45 +568,65 @@ function statusColor(status: TodoStatus) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  listContent: { padding: 20, paddingBottom: 32 },
+  listContent: { padding: 20, paddingBottom: 124 },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 14,
   },
-  title: { fontSize: 32, fontWeight: "800" },
+  title: { fontSize: 34, fontWeight: "900", letterSpacing: -0.6 },
   subtitle: { marginTop: 4, fontSize: 14 },
   headerPill: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#172033",
   },
   headerPillText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  summaryRow: {
+  heroCard: {
+    borderWidth: 1,
+    borderRadius: 28,
+    padding: 18,
+    marginBottom: 14,
+  },
+  heroCopy: { marginBottom: 14 },
+  heroTitle: { fontSize: 20, fontWeight: "900", letterSpacing: -0.3 },
+  heroSubtitle: { marginTop: 6, fontSize: 14, lineHeight: 20 },
+  progressShell: {
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "rgba(100, 112, 125, 0.14)",
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: 10,
+    borderRadius: 999,
+  },
+  heroStatsRow: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 14,
+    marginTop: 14,
   },
   summaryCard: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 14,
   },
-  summaryValue: { fontSize: 24, fontWeight: "800" },
+  summaryValue: { fontSize: 24, fontWeight: "900", letterSpacing: -0.3 },
   summaryLabel: { marginTop: 4, fontSize: 12, fontWeight: "600" },
   composerCard: {
     borderWidth: 1,
     borderRadius: 24,
-    padding: 16,
+    padding: 18,
     marginBottom: 16,
   },
-  sectionTitle: { fontSize: 18, fontWeight: "800", marginBottom: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: "900", marginBottom: 4 },
+  sectionHint: { fontSize: 13, lineHeight: 19, marginBottom: 12 },
   input: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
@@ -607,9 +676,11 @@ const styles = StyleSheet.create({
   ghostButtonText: { fontSize: 15, fontWeight: "700" },
   taskCard: {
     borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: 24,
     padding: 16,
     marginBottom: 12,
+    borderLeftWidth: 5,
+    borderLeftColor: "#0f766e",
   },
   taskTopRow: {
     flexDirection: "row",
@@ -617,7 +688,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   taskBody: { flex: 1 },
-  taskText: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
+  taskText: { fontSize: 18, fontWeight: "900", marginBottom: 4, letterSpacing: -0.2 },
   metaText: { fontSize: 12, fontWeight: "600" },
   priorityBadge: {
     alignSelf: "flex-start",
@@ -644,18 +715,31 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#0f172a",
   },
+  inlineMetaPill: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: "rgba(100, 112, 125, 0.12)",
+  },
+  inlineMetaText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
   actionRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   actionButton: {
+    minWidth: 76,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    alignItems: "center",
   },
   actionText: { color: "#fff", fontSize: 12, fontWeight: "800" },
   emptyContainer: {
-    paddingVertical: 36,
+    paddingVertical: 42,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 20,
   },
   emptyText: { fontSize: 20, fontWeight: "800" },
-  emptySubtext: { marginTop: 6, fontSize: 14, textAlign: "center" },
+  emptySubtext: { marginTop: 6, fontSize: 14, textAlign: "center", lineHeight: 20 },
 });
