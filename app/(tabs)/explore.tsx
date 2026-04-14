@@ -126,7 +126,12 @@ export default function CalendarScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
         <View>
           <Text style={[styles.title, { color: colors.text }]}>Calendar</Text>
           <Text style={[styles.subtitle, { color: colors.icon }]}>
@@ -160,7 +165,7 @@ export default function CalendarScreen() {
       <View
         style={[
           styles.monthCard,
-          { backgroundColor: colors.background, borderColor: colors.icon },
+          { backgroundColor: colors.surface, borderColor: colors.border },
         ]}
       >
         <View style={styles.monthHeader}>
@@ -339,7 +344,7 @@ function SummaryCard({
     <View
       style={[
         styles.summaryCard,
-        { borderColor: color.icon, backgroundColor: color.background },
+        { borderColor: color.border, backgroundColor: color.surface },
       ]}
     >
       <Text style={[styles.summaryValue, { color: color.text }]}>{value}</Text>
@@ -392,7 +397,7 @@ function CalendarTaskCard({
     <View
       style={[
         styles.taskCard,
-        { borderColor: color.icon, backgroundColor: color.background },
+        { borderColor: color.border, backgroundColor: color.surface },
       ]}
     >
       <View style={styles.taskTopRow}>
@@ -443,7 +448,7 @@ function AgendaTaskCard({
     <View
       style={[
         styles.agendaCard,
-        { borderColor: color.icon, backgroundColor: color.background },
+        { borderColor: color.border, backgroundColor: color.surface },
       ]}
     >
       <View style={styles.agendaLeft}>
@@ -526,8 +531,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 12,
+    borderBottomWidth: 1,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    marginHorizontal: 16,
+    marginBottom: 16,
   },
-  title: { fontSize: 30, fontWeight: "800" },
+  title: { fontSize: 32, fontWeight: "900", letterSpacing: -0.5 },
   subtitle: { fontSize: 14, marginTop: 4 },
   modeTabs: { flexDirection: "row", gap: 8 },
   modeTab: {
@@ -546,10 +556,10 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 14,
   },
-  summaryValue: { fontSize: 24, fontWeight: "800" },
+  summaryValue: { fontSize: 24, fontWeight: "900", letterSpacing: -0.3 },
   summaryLabel: { marginTop: 4, fontSize: 12, fontWeight: "600" },
   monthCard: {
     borderWidth: 1,
@@ -578,12 +588,12 @@ const styles = StyleSheet.create({
   dayCell: {
     width: "13.1%",
     aspectRatio: 1,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  dayNumber: { fontSize: 13, fontWeight: "700" },
+  dayNumber: { fontSize: 13, fontWeight: "800" },
   dayBadge: {
     marginTop: 6,
     borderRadius: 999,
@@ -602,7 +612,7 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: 20, paddingBottom: 24 },
   taskCard: {
     borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: 24,
     padding: 16,
     marginBottom: 12,
   },
@@ -612,7 +622,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   taskBody: { flex: 1 },
-  taskText: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
+  taskText: { fontSize: 18, fontWeight: "900", marginBottom: 4, letterSpacing: -0.2 },
   metaText: { fontSize: 12, fontWeight: "600" },
   statusBadge: {
     alignSelf: "flex-start",
@@ -629,11 +639,13 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    minWidth: 72,
+    alignItems: "center",
   },
   actionText: { color: "#fff", fontSize: 12, fontWeight: "800" },
   agendaCard: {
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 16,
     marginBottom: 12,
     flexDirection: "row",
@@ -641,14 +653,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   agendaLeft: { flex: 1 },
-  agendaDate: { fontSize: 12, fontWeight: "700", marginBottom: 4 },
-  agendaText: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
+  agendaDate: { fontSize: 12, fontWeight: "800", marginBottom: 4 },
+  agendaText: { fontSize: 18, fontWeight: "900", marginBottom: 4 },
   agendaActions: { justifyContent: "center", gap: 8 },
   emptyContainer: {
-    paddingVertical: 36,
+    paddingVertical: 40,
     alignItems: "center",
     justifyContent: "center",
   },
-  emptyText: { fontSize: 20, fontWeight: "800" },
-  emptySubtext: { marginTop: 6, fontSize: 14, textAlign: "center" },
+  emptyText: { fontSize: 20, fontWeight: "900" },
+  emptySubtext: { marginTop: 6, fontSize: 14, textAlign: "center", lineHeight: 20 },
 });
