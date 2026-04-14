@@ -45,8 +45,8 @@ export default function TrashScreen() {
         style={[
           styles.header,
           {
-            backgroundColor: colors.background,
-            borderBottomColor: colors.icon,
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
           },
         ]}
       >
@@ -58,10 +58,16 @@ export default function TrashScreen() {
       </View>
 
       {trashedTasks.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { color: colors.text }]}>
-            Trash is empty
-          </Text>
+        <View
+          style={[
+            styles.emptyContainer,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text style={[styles.emptyText, { color: colors.text }]}>Trash is empty</Text>
           <Text style={[styles.emptySubtext, { color: colors.icon }]}>
             Deleted tasks will appear here before permanent removal.
           </Text>
@@ -77,8 +83,8 @@ export default function TrashScreen() {
               style={[
                 styles.trashItem,
                 {
-                  backgroundColor: colors.background,
-                  borderColor: colors.icon,
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
                 },
               ]}
             >
@@ -123,7 +129,7 @@ export default function TrashScreen() {
                 <TouchableOpacity
                   style={[
                     styles.deleteButton,
-                    { backgroundColor: colors.icon },
+                    { backgroundColor: colors.danger },
                   ]}
                   onPress={() => confirmDeleteForever(item.id)}
                 >
@@ -171,38 +177,37 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 60,
     borderBottomWidth: 1,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    marginHorizontal: 16,
+    marginBottom: 16,
   },
-  title: {
-    fontSize: 30,
-    fontWeight: "700",
-  },
+  title: { fontSize: 32, fontWeight: "900", letterSpacing: -0.5 },
   subtitle: {
     fontSize: 14,
     marginTop: 5,
   },
   listContent: {
     padding: 20,
-    paddingBottom: 24,
+    paddingBottom: 124,
   },
   trashItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderRadius: 20,
     borderWidth: 1,
   },
   taskCopy: {
     flex: 1,
     paddingRight: 12,
   },
-  taskText: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
+  taskText: { fontSize: 17, marginBottom: 6, fontWeight: "800" },
   metaText: {
     fontSize: 12,
+    lineHeight: 18,
   },
   actions: {
     flexDirection: "row",
@@ -210,7 +215,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButton: {
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -220,7 +225,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   deleteButton: {
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -233,15 +238,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 24,
+    margin: 20,
+    borderWidth: 1,
+    borderRadius: 24,
   },
-  emptyText: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: "center",
-  },
+  emptyText: { fontSize: 20, fontWeight: "900", marginBottom: 8 },
+  emptySubtext: { fontSize: 14, textAlign: "center", lineHeight: 20 },
 });
